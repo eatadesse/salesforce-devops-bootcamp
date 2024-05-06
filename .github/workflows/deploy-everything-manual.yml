@@ -35,3 +35,8 @@ jobs:
         shell: bash
         run: |
           sfdx force:source:deploy -p "${SOURCE_PATH}" -u "${SALESFORCE_ORG_USERNAME}" -g --verbose
+    steps:
+      - name: Set up Node.js
+          uses: actions/setup-node@v2
+        with:
+          node-version: '20.12.2'
