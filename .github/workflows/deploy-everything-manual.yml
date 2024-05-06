@@ -18,6 +18,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+   
       - uses: actions/checkout@v3 # Checks out git repository
       
       - name: Install Salesforce CLI # Installing Salesforce CLI to run sfdx commands
@@ -35,8 +41,3 @@ jobs:
         shell: bash
         run: |
           sfdx force:source:deploy -p "${SOURCE_PATH}" -u "${SALESFORCE_ORG_USERNAME}" -g --verbose
-    steps:
-      - name: Set up Node.js
-          uses: actions/setup-node@v2
-        with:
-          node-version: '20.12.2'
