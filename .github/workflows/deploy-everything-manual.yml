@@ -9,7 +9,7 @@ on:
 env:
   SFDX_AUDIENCE_URL: https://login.salesforce.com
   SALESFORCE_ORG_USERNAME: etadesse23@salesforce.com
-  SALESFORCE_ORG_URL: https://dbm000002ob2neau-dev-ed.develop.my.salesforce.com
+  SALESFORCE_ORG_URL: dbm000002ob2neau-dev-ed.develop.my.salesforce.com
   SALESFORCE_CONSUMER_KEY: ${{ secrets.SALESFORCE_CONSUMER_KEY }} # SFDX App consumer key from target org
   JWTKEY: ${{ secrets.JWTKEY }} # JWT private key
   SOURCE_PATH: force-app # Directory you want SFDX to deploy
