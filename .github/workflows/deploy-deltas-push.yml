@@ -35,13 +35,19 @@ jobs:
         shell: bash
         run: |
           npm install --global sfdx-cli@7.186.2
-      
+          
       - name: Install acu-pack # Installing acu-pack to create delta packages
         shell: bash
         run: |
           echo "y" | sfdx plugins:install @salesforce/acu-pack
           sfdx acu-pack -h
-      
+          
+      - name: Install Salesforce Code Analyzer # Installing Salesforce Code Analyzer to scan code
+        shell: bash
+        run: |
+          echo "y" | sfdx plugins:install @salesforce/sfdx-scanner
+          sfdx scanner -h
+          
       - name: Setup Git User # Sets up Git user to commit/push merge commit to remote repository
         shell: bash
         run: |
@@ -67,6 +73,11 @@ jobs:
           echo "Listing components in deploy package..."
           find deploy -type f
           
+      - name: Scan Code # Scans code in deploy package
+        shell: bash
+        run: |
+          sfdx scanner:run --target deploy --category 'Documentation' --format table --severity-threshold 3
+          
       - name: Deploy Delta Package to Target Org # Deploys Salesforce components in delta package to target org
         shell: bash
         run: |
@@ -85,5 +96,3 @@ jobs:
       - name: Push Changes to Repository # Git pushes merge commit to remote repository
         if: ${{ success() }}
         shell: bash
-        run: |
-          git push -u origin --force "${TARGET_BRANCH}"
