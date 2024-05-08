@@ -27,8 +27,8 @@ jobs:
     container:
       image: ghcr.io/eatadesse/devops-bootcamp:main
       credentials:
-        username: ${{ fromJSON(vars.GH_USERNAME) }} # GitHub username with access to CSGAMERSServices organization. Use GitHub Actions Variables to store
-        password: ${{ fromJSON(secrets.GH_PAT) }} # GitHub user Personal Access Token with read:packages scope. Use GitHub Actions Secrets to store
+        username: ${{ vars.GH_USERNAME }} # GitHub username with access to CSGAMERSServices organization. Use GitHub Actions Variables to store
+        password: ${{ secrets.GH_PAT }} # GitHub user Personal Access Token with read:packages scope. Use GitHub Actions Secrets to store
     
     steps:
       - name: Adding GitHub Workspace as safe directory # Step is need to use Salesforce CLI plugins
