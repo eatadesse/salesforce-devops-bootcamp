@@ -1,11 +1,4 @@
 /**
- * @description       : 
- * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
- * @group             : 
- * @last modified on  : 05-07-2024
- * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
-**/
-/**
  * @description Verify Date
  */
 public class VerifyDate {
@@ -47,6 +40,5 @@ public class VerifyDate {
         Date lastDay = Date.newInstance(date1.year(), date1.month(), totalDays);
         return lastDay;
     }
-    //Create pull request test !!!!
 
 }
