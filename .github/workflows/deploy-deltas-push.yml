@@ -70,7 +70,17 @@ jobs:
       - name: Deploy Delta Package to Target Org # Deploys Salesforce components in delta package to target org
         shell: bash
         run: |
-          sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" -g --verbose
+          # Checks to see if Apex class/trigger exists in deploy package
+          if [ -d "deploy/main/default/classes" ] || [ -d "deploy/main/default/triggers" ]
+          then
+            # Class(es)/Trigger(s) are in deploy package so the build will run specified tests from the tests/apex-specified-tests.txt
+            echo "Deploying Salesforce components and running specified apex tests..."
+            sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" -l RunSpecifiedTests -r $(<tests/apex-specified-tests.txt) -g --verbose
+          else
+            # Class/Trigger are not in deploy package so the build will not run any tests.
+            echo "Deploying Salesforce components with no apex tests running..."
+            sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" -l NoTestRun -g --verbose
+          fi
       
       - name: Push Changes to Repository # Git pushes merge commit to remote repository
         if: ${{ success() }}
