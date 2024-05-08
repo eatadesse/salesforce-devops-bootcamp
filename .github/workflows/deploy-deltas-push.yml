@@ -19,34 +19,27 @@ env:
   JWTKEY: ${{ secrets.JWTKEY }} # JWT private key
   TARGET_BRANCH: main # Git branch to merge feature branch into
   SOURCE_DIR: force-app # Directory you want acu-pack to create a delta package from
+  HOME: /root # Needed to run SFDX plugin commands
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/eatadesse/devops-bootcamp:main
+      credentials:
+        username: ${{ vars.GH_USERNAME }} # GitHub username with access to CSGAMERSServices organization. Use GitHub Actions Variables to store
+        password: ${{ secrets.GH_PAT }} # GitHub user Personal Access Token with read:packages scope. Use GitHub Actions Secrets to store
     
     steps:
+      - name: Adding GitHub Workspace as safe directory # Step is need to use Salesforce CLI plugins
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      
       - name: Checkout Git Repository # Checkout Git repository
         uses: actions/checkout@v3
         with:
           ref: ${{ env.TARGET_BRANCH }}
           fetch-depth: 0
-
-      - name: Install Salesforce CLI # Installing Salesforce CLI to run sfdx commands
-        shell: bash
-        run: |
-          npm install --global sfdx-cli@7.186.2
-          
-      - name: Install acu-pack # Installing acu-pack to create delta packages
-        shell: bash
-        run: |
-          echo "y" | sfdx plugins:install @salesforce/acu-pack
-          sfdx acu-pack -h
-          
-      - name: Install Salesforce Code Analyzer # Installing Salesforce Code Analyzer to scan code
-        shell: bash
-        run: |
-          echo "y" | sfdx plugins:install @salesforce/sfdx-scanner
-          sfdx scanner -h
           
       - name: Setup Git User # Sets up Git user to commit/push merge commit to remote repository
         shell: bash
