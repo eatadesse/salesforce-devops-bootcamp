@@ -22,11 +22,10 @@
                 <label>value2</label>
             </value>
             <value>
-                <fullName>value3</fullName>
+                <fullName>value2</fullName>
                 <default>false</default>
-                <label>value3</label>
+                <label>value2</label>
             </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
-<!--TESTING AUTO PR COMMENT AGAIN-->
