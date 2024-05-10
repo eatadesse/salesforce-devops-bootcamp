@@ -57,6 +57,46 @@ jobs:
           find deploy -type f
           
       - name: Deploy Delta Package to Target Org # Deploys Salesforce components in delta package to target org and stores results in text file to update PR
+        id: deploy-salesforce
         shell: bash
         run: |
-          sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" --verbose -g
+          (
+            set -o pipefail
+            sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" --verbose -g | tee results.txt
+          )
+          
+      - name: Format Results # Formats results in text file to post in PR
+        id: format-results
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          RESULTS=$(cat results.txt)
+          delimiter="$(openssl rand -hex 8)"
+          echo "FORMATTED_RESULTS<<${delimiter}" >> "${GITHUB_OUTPUT}"
+          echo "${RESULTS}" >> "${GITHUB_OUTPUT}"
+          echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+           
+      - name: Update Pull Request # Adds comment to PR with results of Salesforce build
+        if: ${{ always() }}
+        uses: actions/github-script@v6.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Deployment to Salesforce Org: \`${{ steps.deploy-salesforce.outcome }}\`
+            
+            <details><summary>Show Salesforce Deployment Output</summary>
+            
+            \`\`\`\n
+            ${{ steps.format-results.outputs.FORMATTED_RESULTS }}
+            \`\`\`
+            
+            </details>
+            
+            *Workflow: \`${{ github.workflow }}\` | Workflow Run Number: \`${{ github.run_number }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
