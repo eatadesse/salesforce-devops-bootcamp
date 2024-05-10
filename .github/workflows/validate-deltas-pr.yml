@@ -31,7 +31,7 @@ jobs:
         password: ${{ secrets.GH_PAT }} # GitHub user Personal Access Token with read:packages scope. Use GitHub Actions Secrets to store
     
     steps:
-      - name: Adding GitHub Workspace as safe directory # Step is need to use Salesforce CLI plugins
+      - name: Adding GitHub Workspace as safe directory # Step is needed to use Salesforce CLI plugins
         shell: bash
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       
@@ -55,21 +55,65 @@ jobs:
           find deploy -type f
           
       - name: Scan Code # Scans code in deploy package
+        id: scan-code
         shell: bash
         run: |
-          sfdx scanner:run --target deploy --category 'Documentation' --format table --severity-threshold 3
+          (
+            set -o pipefail
+            sfdx scanner:run --target deploy --category 'Documentation' --format table --severity-threshold 3 | tee results.txt
+          )
           
       - name: Validate Delta Package to Target Org # Valdiates Salesforce components in delta package to target org
+        id: validate-salesforce
         shell: bash
         run: |
-          # Checks to see if Apex class/trigger exists in deploy package
-          if [ -d "deploy/main/default/classes" ] || [ -d "deploy/main/default/triggers" ]
-          then
-            # Class(es)/Trigger(s) are in deploy package so the build will run specified tests from the tests/apex-specified-tests.txt
-            echo "Deploying Salesforce components and running specified apex tests..."
-            sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" --checkonly -l RunSpecifiedTests -r $(<tests/apex-specified-tests.txt) -g --verbose
-          else
-            # Class/Trigger are not in deploy package so the build will not run any tests.
-            echo "Deploying Salesforce components with no apex tests running..."
-            sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" --checkonly -l NoTestRun -g --verbose
-          fi
+          (
+            set -o pipefail
+            # Checks to see if Apex class/trigger exists in deploy package
+            if [ -d "deploy/main/default/classes" ] || [ -d "deploy/main/default/triggers" ]
+            then
+              # Class(es)/Trigger(s) are in deploy package so the build will run specified tests from the tests/apex-specified-tests.txt
+              echo "Deploying Salesforce components and running specified apex tests..."
+              sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" --checkonly -l RunSpecifiedTests -r $(<tests/apex-specified-tests.txt) -g --verbose | tee results.txt
+            else
+              # Class/Trigger are not in deploy package so the build will not run any tests.
+              echo "Deploying Salesforce components with no apex tests running..."
+              sfdx force:source:deploy -p deploy -u "${SALESFORCE_ORG_USERNAME}" --checkonly -l NoTestRun -g --verbose | tee results.txt
+            fi
+          )
+          
+      - name: Format Results # Formats results in text file to post in PR
+        id: format-results
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          RESULTS=$(cat results.txt)
+          delimiter="$(openssl rand -hex 8)"
+          echo "FORMATTED_RESULTS<<${delimiter}" >> "${GITHUB_OUTPUT}"
+          echo "${RESULTS}" >> "${GITHUB_OUTPUT}"
+          echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+           
+      - name: Update Pull Request # Adds comment to PR with results of Salesforce build
+        if: ${{ always() }}
+        uses: actions/github-script@v6.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Code Scan: \`${{ steps.scan-code.outcome }}\` | Validation to Salesforce Org: \`${{ steps.validate-salesforce.outcome }}\`
+            
+            <details><summary>Show Results</summary>
+            
+            \`\`\`\n
+            ${{ steps.format-results.outputs.FORMATTED_RESULTS }}
+            \`\`\`
+            
+            </details>
+            
+            *Workflow: \`${{ github.workflow }}\` | Workflow Run Number: \`${{ github.run_number }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
